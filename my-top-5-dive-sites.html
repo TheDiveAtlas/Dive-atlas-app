@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Top 5 Dive Sites - The Dive Atlas</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="dive-data.js"></script> 
+  <style>
+    /* Basic Reset & Body Styling */
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      height: 100%;
+      background-color: #f4f7f6; /* Light background */
+      color: #333;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh; /* Ensure body takes full viewport height */
+    }
+
+    /* Header Styles (Consistent with other pages) */
+    header {
+      background: #003366;
+      color: white;
+      padding: 0.5rem 20px;
+      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      position: relative;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    header h1 {
+      margin: 0;
+      padding: 0;
+      font-size: 1.8em;
+    }
+
+    /* Menu Styles (Consistent with other pages) */
+    .menu-container {
+      position: relative;
+      display: inline-block;
+    }
+    .menu-button {
+      background-color: #004d99;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background-color 0.3s ease;
+    }
+    .menu-button:hover {
+      background-color: #0066cc;
+    }
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      background-color: white;
+      min-width: 180px;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      z-index: 1003;
+      border-radius: 5px;
+      left: 0;
+      margin-top: 5px;
+      list-style: none;
+      padding: 0;
+    }
+    .dropdown-menu li a {
+      color: #003366;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+      text-align: left;
+      transition: background-color 0.2s ease;
+      white-space: nowrap;
+    }
+    .dropdown-menu li a:hover {
+      background-color: #f0f0f0;
+    }
+    .menu-container:hover .dropdown-menu {
+      display: block;
+    }
+
+    /* Main Content Area */
+    .main-content {
+      flex-grow: 1; 
+      padding: 20px;
+      max-width: 900px; /* Slightly wider to accommodate two columns */
+      margin: 20px auto; 
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+    }
+    h2 {
+      color: #003366;
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 25px;
+      font-size: 2em;
+    }
+
+    /* Layout for two main sections */
+    .sections-wrapper {
+        display: flex;
+        flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        gap: 20px;
+        justify-content: center;
+    }
+
+    .section {
+        flex: 1; /* Each section takes equal space */
+        min-width: 300px; /* Minimum width before wrapping */
+        padding: 15px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #fefefe;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .section h3 {
+        color: #004d99;
+        margin-top: 0;
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    /* Available Dived Sites List */
+    #available-dived-sites-list ul {
+        list-style: none;
+        padding: 0;
+    }
+    #available-dived-sites-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px dotted #f0f0f0;
+    }
+    #available-dived-sites-list li:last-child {
+        border-bottom: none;
+    }
+    #available-dived-sites-list .site-info {
+        flex-grow: 1;
+        margin-right: 10px;
+    }
+    #available-dived-sites-list .site-info strong {
+        color: #333;
+    }
+    #available-dived-sites-list .site-info span {
+        font-size: 0.9em;
+        color: #666;
+    }
+    .add-to-top5-btn {
+        background-color: #28a745; /* Green for add */
+        color: white;
+        padding: 6px 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    .add-to-top5-btn:hover {
+        background-color: #218838;
+    }
+    .add-to-top5-btn:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
+    #top5-count {
+        text-align: center;
+        margin-bottom: 20px;
+        font-weight: bold;
+        color: #003366;
+        font-size: 1.1em;
+    }
+
+    /* My Top 5 Dive Sites Display */
+    #my-top5-sites-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px; /* Space between top 5 cards */
+    }
+
+    .top5-site-card {
+        background-color: #e6f7ff; /* Lighter blue background */
+        border: 1px solid #b3e0ff;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        position: relative; /* For rank number positioning */
+    }
+    .top5-site-card .rank-number {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background-color: #003366;
+        color: white;
+        padding: 5px 10px;
+        border-top-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+        font-weight: bold;
+        font-size: 1.1em;
+        z-index: 10; /* Ensure it's above other content */
+    }
+
+    .top5-site-card h4 {
+        color: #003366;
+        margin-top: 15px; /* Adjust for rank number */
+        margin-bottom: 5px;
+        font-size: 1.2em;
+        padding-left: 5px; /* Space from rank number */
+    }
+    .top5-site-card .photo-container {
+        display: flex;
+        overflow-x: auto; 
+        gap: 8px;
+        padding: 8px 0;
+        margin: 10px 0;
+        background: #f0f8ff;
+        border-radius: 4px; 
+        flex-shrink: 0; 
+    }
+    .top5-site-card .dive-photo {
+        height: 80px; 
+        width: auto;
+        max-width: 120px;
+        border-radius: 4px;
+        object-fit: cover; 
+        border: 2px solid #00CED1;
+    }
+    .top5-site-card .review-stars {
+        color: gold;
+    }
+    .button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    .remove-from-top5-btn, .move-up-btn, .move-down-btn {
+        padding: 6px 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        font-size: 0.9em;
+    }
+    .remove-from-top5-btn {
+        background-color: #ffc107; /* Yellow for remove */
+        color: #333;
+    }
+    .remove-from-top5-btn:hover {
+        background-color: #e0a800;
+    }
+    .move-up-btn, .move-down-btn {
+        background-color: #6c757d; /* Grey for move buttons */
+        color: white;
+    }
+    .move-up-btn:hover, .move-down-btn:hover {
+        background-color: #5a6268;
+    }
+    .move-up-btn:disabled, .move-down-btn:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
+
+    .message {
+        text-align: center;
+        padding: 15px;
+        color: #666;
+        font-style: italic;
+    }
+    /* New button container and button styles */
+    .back-button-container {
+      text-align: center;
+      margin-top: 30px;
+      margin-bottom: 20px;
+    }
+    .back-button {
+      background-color: #6c757d; /* Grey */
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      text-decoration: none;
+      display: inline-block;
+      transition: background-color 0.3s ease;
+    }
+    .back-button:hover {
+      background-color: #5a6268;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="menu-container">
+      <button class="menu-button">Menu</button>
+      <ul class="dropdown-menu">
+        <li><a href="my-account.html">My Account</a></li>
+        <li><a href="add-dive-site.html">Add a Dive Site</a></li>
+        <li><a href="add-scuba-shop.html">Add a Scuba Shop</a></li>
+        <li><a href="my-top-5-dive-sites.html">My Top 5 Dive Sites</a></li>
+        <li><a href="where-ive-dived.html">Where I've Dived</a></li>
+      </ul>
+    </div>
+    <h1>My Top 5 Dive Sites</h1>
+  </header>
+
+  <div class="main-content">
+    <h2>Manage Your Top 5</h2>
+
+    <div id="top5-count">0 of 5 sites selected</div>
+
+    <div class="sections-wrapper">
+        <div class="section">
+            <h3>Available Dived Sites</h3>
+            <div id="available-dived-sites-list">
+                <p class="message" id="no-dived-sites-message" style="display: none;">You haven't marked any sites as "dived" yet. Go to the map to log your dives!</p>
+                <ul>
+                    </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>My Current Top 5</h3>
+            <div id="my-top5-sites-list">
+                <p class="message" id="no-top5-sites-message" style="display: none;">Select sites from the left to add them to your Top 5.</p>
+                </div>
+        </div>
+    </div>
+    
+    <div class="back-button-container">
+      <a href="index.html" class="back-button">Back to Map</a>
+    </div>
+
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Dropdown menu functionality (consistent)
+      const menuButton = document.querySelector('.menu-button');
+      const dropdownMenu = document.querySelector('.dropdown-menu');
+
+      if (menuButton && dropdownMenu) {
+          menuButton.addEventListener('click', function(event) {
+              dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+              event.stopPropagation();
+          });
+
+          document.addEventListener('click', function(event) {
+              if (!menuButton.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                  dropdownMenu.style.display = 'none';
+              }
+          });
+      }
+
+      // --- Local Storage Keys ---
+      const LOCAL_STORAGE_KEY_DIVES = 'diveAtlasDivedSites'; // For all sites marked as 'dived'
+      const LOCAL_STORAGE_KEY_USER_DIVES = 'userAddedDiveSites'; // For user-submitted sites
+      const LOCAL_STORAGE_KEY_TOP5 = 'top5DiveSites'; // New key for Top 5 selections
+
+      // --- DOM Elements ---
+      const top5CountElement = document.getElementById('top5-count');
+      const availableDivedSitesList = document.querySelector('#available-dived-sites-list ul');
+      const myTop5SitesList = document.getElementById('my-top5-sites-list');
+      const noDivedSitesMessage = document.getElementById('no-dived-sites-message');
+      const noTop5SitesMessage = document.getElementById('no-top5-sites-message');
+
+      // --- Helper Functions ---
+      function getStarRating(score) {
+          if (isNaN(score) || score === 0 || score === null) return 'No rating yet'; // Handle cases with no reviews or 0 score
+          const fullStars = '★'.repeat(Math.floor(score));
+          const halfStar = (score % 1 >= 0.5) ? '½' : '';
+          const emptyStars = '☆'.repeat(5 - Math.ceil(score));
+          return fullStars + halfStar + emptyStars;
+      }
+
+      function loadAllDiveSites() {
+          let all = [...diveSites]; // From dive-data.js
+          const userAdded = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_USER_DIVES)) || [];
+          return all.concat(userAdded);
+      }
+
+      function saveTop5Sites(top5Ids) {
+          localStorage.setItem(LOCAL_STORAGE_KEY_TOP5, JSON.stringify(top5Ids));
+      }
+
+      function loadTop5Page() {
+          const divedSiteIds = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_DIVES)) || [];
+          let currentTop5Ids = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_TOP5)) || [];
+          
+          // Ensure top5Ids array only contains valid dived sites and is capped at 5
+          currentTop5Ids = currentTop5Ids.filter(id => divedSiteIds.includes(id)); // Remove any top5 IDs that are no longer 'dived'
+          if (currentTop5Ids.length > 5) {
+              currentTop5Ids = currentTop5Ids.slice(0, 5); // Trim to max 5
+          }
+          saveTop5Sites(currentTop5Ids); // Save cleaned/capped version
+
+          const allDiveSites = loadAllDiveSites();
+
+          // Filter for sites that have been dived
+          const divedSiteDetails = allDiveSites.filter(site => divedSiteIds.includes(site.id));
+
+          // Filter for sites currently in Top 5 (maintain order as stored)
+          const top5Details = currentTop5Ids.map(id => allDiveSites.find(site => site.id === id)).filter(Boolean); // Filter(Boolean) removes undefined if site not found
+
+          // --- Update Top 5 Count ---
+          top5CountElement.textContent = `${currentTop5Ids.length} of 5 sites selected`;
+
+          // --- Populate Available Dived Sites List ---
+          availableDivedSitesList.innerHTML = ''; // Clear previous
+          const availableToAdd = divedSiteDetails.filter(site => !currentTop5Ids.includes(site.id));
+
+          if (divedSiteIds.length === 0) {
+              noDivedSitesMessage.style.display = 'block';
+              availableDivedSitesList.innerHTML = ''; // Ensure list is empty
+          } else {
+              noDivedSitesMessage.style.display = 'none';
+              if (availableToAdd.length === 0 && currentTop5Ids.length < 5) {
+                 availableDivedSitesList.innerHTML = '<p class="message">All dived sites are already in your Top 5, or you have no more dived sites to add.</p>';
+              } else if (currentTop5Ids.length === 5 && availableToAdd.length > 0) {
+                 availableDivedSitesList.innerHTML = '<p class="message">Your Top 5 is full. Remove a site from "My Current Top 5" to add another.</p>';
+              } else {
+                availableToAdd.forEach(site => {
+                    const listItem = document.createElement('li');
+                    const totalStars = site.reviews.reduce((sum, review) => sum + review.stars, 0);
+                    const averageRating = site.reviews.length > 0 ? totalStars / site.reviews.length : 0;
+                    
+                    listItem.innerHTML = `
+                        <div class="site-info">
+                            <strong>${site.name}</strong> 
+                            <br><span>Rating: <span class="review-stars">${getStarRating(averageRating)}</span> (${averageRating.toFixed(1)}/5)</span>
+                        </div>
+                        <button class="add-to-top5-btn" data-site-id="${site.id}" ${currentTop5Ids.length >= 5 ? 'disabled' : ''}>Add to Top 5</button>
+                    `;
+                    availableDivedSitesList.appendChild(listItem);
+                });
+              }
+          }
+
+          // --- Populate My Top 5 Dive Sites List ---
+          myTop5SitesList.innerHTML = ''; // Clear previous
+          if (top5Details.length === 0) {
+              noTop5SitesMessage.style.display = 'block';
+          } else {
+              noTop5SitesMessage.style.display = 'none';
+              top5Details.forEach((site, index) => {
+                  const totalStars = site.reviews.reduce((sum, review) => sum + review.stars, 0);
+                  const averageRating = site.reviews.length > 0 ? totalStars / site.reviews.length : 0;
+                  const ratingStars = getStarRating(averageRating);
+
+                  const card = document.createElement('div');
+                  card.classList.add('top5-site-card');
+                  card.setAttribute('data-site-id', site.id);
+
+                  card.innerHTML = `
+                      <div class="rank-number">${index + 1}</div>
+                      <h4>${site.name}</h4>
+                      <p><strong>Depth:</strong> ${site.depth}</p>
+                      ${site.description ? `<p>${site.description}</p>` : ''}
+                      <p><strong>Rating:</strong> <span class="review-stars">${ratingStars}</span> (${averageRating.toFixed(1)}/5)</p>
+                      
+                      <div class="photo-container">
+                          ${site.photos && site.photos.length > 0 ? 
+                              site.photos.map(photo => `<img src="${photo}" class="dive-photo" alt="${site.name}">`).join('') :
+                              '<p>No photos available.</p>'}
+                      </div>
+                      <div class="button-group">
+                          <button class="move-up-btn" data-site-id="${site.id}" ${index === 0 ? 'disabled' : ''}>Move Up</button>
+                          <button class="move-down-btn" data-site-id="${site.id}" ${index === top5Details.length - 1 ? 'disabled' : ''}>Move Down</button>
+                          <button class="remove-from-top5-btn" data-site-id="${site.id}">Remove</button>
+                      </div>
+                  `;
+                  myTop5SitesList.appendChild(card);
+              });
+          }
+
+          // --- Attach Event Listeners (after rendering) ---
+          // Add to Top 5
+          document.querySelectorAll('.add-to-top5-btn').forEach(button => {
+              button.addEventListener('click', function() {
+                  const siteId = parseInt(this.dataset.site-id);
+                  let currentTop5 = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_TOP5)) || [];
+                  if (currentTop5.length < 5 && !currentTop5.includes(siteId)) {
+                      currentTop5.push(siteId); // Add to the end
+                      saveTop5Sites(currentTop5);
+                      loadTop5Page(); // Reload to reflect changes
+                  }
+              });
+          });
+
+          // Remove from Top 5
+          document.querySelectorAll('.remove-from-top5-btn').forEach(button => {
+              button.addEventListener('click', function() {
+                  const siteId = parseInt(this.dataset.site-id);
+                  let currentTop5 = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_TOP5)) || [];
+                  currentTop5 = currentTop5.filter(id => id !== siteId);
+                  saveTop5Sites(currentTop5);
+                  loadTop5Page(); // Reload to reflect changes
+              });
+          });
+
+          // Move Up
+          document.querySelectorAll('.move-up-btn').forEach(button => {
+              button.addEventListener('click', function() {
+                  const siteId = parseInt(this.dataset.site-id);
+                  let currentTop5 = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_TOP5)) || [];
+                  const index = currentTop5.indexOf(siteId);
+                  if (index > 0) { // Can move up if not already at the top
+                      [currentTop5[index], currentTop5[index - 1]] = [currentTop5[index - 1], currentTop5[index]]; // Swap elements
+                      saveTop5Sites(currentTop5);
+                      loadTop5Page(); // Reload to reflect new order
+                  }
+              });
+          });
+
+          // Move Down
+          document.querySelectorAll('.move-down-btn').forEach(button => {
+              button.addEventListener('click', function() {
+                  const siteId = parseInt(this.dataset.site-id);
+                  let currentTop5 = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_TOP5)) || [];
+                  const index = currentTop5.indexOf(siteId);
+                  if (index < currentTop5.length - 1) { // Can move down if not already at the bottom
+                      [currentTop5[index], currentTop5[index + 1]] = [currentTop5[index + 1], currentTop5[index]]; // Swap elements
+                      saveTop5Sites(currentTop5);
+                      loadTop5Page(); // Reload to reflect new order
+                  }
+              });
+          });
+      }
+
+      // Initial load of the page
+      loadTop5Page();
+    });
+  </script>
+
+  
+</body>
+</html>

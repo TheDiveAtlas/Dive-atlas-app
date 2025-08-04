@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account - The Dive Atlas</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background: #003366;
+            color: white;
+            padding: 0.5rem 20px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            position: relative;
+        }
+        header h1 {
+            margin: 0;
+            padding: 0;
+            font-size: 1.8em;
+        }
+
+        /* Menu Styles (copied from diveatlas11.html for consistency) */
+        .menu-container {
+            position: relative;
+            display: inline-block;
+        }
+        .menu-button {
+            background-color: #004d99;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            width: 45px;
+            height: 40px;
+            padding: 5px;
+        }
+        .menu-button:hover {
+            background-color: #0066cc;
+        }
+        .hamburger-icon {
+            width: 25px;
+            height: 3px;
+            background-color: white;
+            border-radius: 2px;
+        }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 180px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1003;
+            border-radius: 5px;
+            left: 0;
+            margin-top: 5px;
+            list-style: none;
+            padding: 0;
+        }
+        .dropdown-menu li a {
+            color: #003366;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+            transition: background-color 0.2s ease;
+            white-space: nowrap;
+        }
+        .dropdown-menu li a:hover {
+            background-color: #f0f0f0;
+        }
+        .menu-container:hover .dropdown-menu {
+            display: block;
+        }
+        .user-info {
+            color: white;
+            font-size: 0.9em;
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .user-info button {
+            background: none;
+            border: 1px solid white;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .user-info button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        /* End Menu Styles */
+
+        .container {
+            flex-grow: 1; /* Allows container to take available space */
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #003366;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .account-details p {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .account-details strong {
+            color: #004d99;
+        }
+        .back-button-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .back-button {
+            background-color: #008CBA; /* Blue */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            text-decoration: none; /* For the anchor tag */
+            display: inline-block; /* For the anchor tag */
+            transition: background-color 0.3s ease;
+        }
+        .back-button:hover {
+            background-color: #005f7a;
+        }
+    </style>
+</head>
+<body>
+    <header id="app-header">
+        <div class="menu-container">
+            <button class="menu-button" aria-label="Menu">
+                <div class="hamburger-icon"></div>
+                <div class="hamburger-icon"></div>
+                <div class="hamburger-icon"></div>
+            </button>
+            <ul class="dropdown-menu">
+                <li id="myAccountMenuItem"><a href="#" id="myAccountLink">My Account</a></li>
+                <li id="addDiveSiteMenuItem"><a href="#" id="addDiveSiteLink">Add a Dive Site</a></li>
+                <li id="addScubaShopMenuItem"><a href="#" id="addScubaShopLink">Add a Scuba Shop</a></li>
+                <li><a href="my-top-5-dive-sites.html">My Top 5 Dive Sites</a></li>
+                <li><a href="where-ive-dived.html">Where I've Dived</a></li>
+                <li><a href="feed.html" id="feedLink">Activity Feed</a></li>
+            </ul>
+        </div>
+        <h1>My Account</h1>
+        <div class="user-info">
+            <span id="loggedInUsername"></span>
+            <button id="authButton"></button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="accountContent">
+            <h2>Account Information</h2>
+            <div class="account-details">
+                <p><strong>Username:</strong> <span id="usernameDisplay"></span></p>
+                <p><strong>Email:</strong> <span id="emailDisplay"></span></p>
+                </div>
+        </div>
+        <div class="back-button-container">
+            <a href="index.html" class="back-button">Back to Map</a>
+        </div>
+    </div>
+
+    <script>
+        // Authentication Check & UI Update
+        let isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        let loggedInUser = localStorage.getItem('loggedInUser');
+        const authButton = document.getElementById('authButton');
+        const loggedInUsernameSpan = document.getElementById('loggedInUsername');
+        const myAccountLink = document.getElementById('myAccountLink');
+        const addDiveSiteLink = document.getElementById('addDiveSiteLink');
+        const addScubaShopLink = document.getElementById('addScubaShopLink');
+        const feedLink = document.getElementById('feedLink'); // New reference
+        const usernameDisplay = document.getElementById('usernameDisplay');
+        const emailDisplay = document.getElementById('emailDisplay');
+        const accountContent = document.getElementById('accountContent');
+
+        function updateAuthUI() {
+            if (isLoggedIn) {
+                loggedInUsernameSpan.textContent = `Hello, ${loggedInUser || 'User'}!`;
+                authButton.textContent = 'Logout';
+                authButton.onclick = function() {
+                    localStorage.setItem('isLoggedIn', 'false');
+                    localStorage.removeItem('loggedInUser');
+                    localStorage.removeItem('loggedInEmail'); // Also clear email
+                    isLoggedIn = false;
+                    loggedInUser = null;
+                    updateAuthUI(); // Update UI immediately after logout
+                    window.location.href = 'index.html'; // Redirect to index.html after logout
+                };
+                myAccountLink.href = 'my-account.html';
+
+                // Display user details if logged in
+                usernameDisplay.textContent = loggedInUser || 'N/A';
+                emailDisplay.textContent = localStorage.getItem('loggedInEmail') || 'N/A';
+                accountContent.style.display = 'block'; // Show content
+            } else {
+                loggedInUsernameSpan.textContent = '';
+                authButton.textContent = 'Login';
+                authButton.onclick = function() {
+                    window.location.href = 'login.html';
+                };
+                myAccountLink.href = 'login.html';
+                accountContent.innerHTML = '<h2>Please log in to view your account details.</h2><p style="text-align:center;"><a href="login.html" class="back-button">Go to Login</a></p>';
+            }
+            if (feedLink) feedLink.href = 'feed.html'; // Feed link always goes to feed.html
+        }
+
+        // Handlers for menu items that require login
+        function handleAuthRequiredLink(e) {
+            if (!isLoggedIn) {
+                e.preventDefault();
+                alert('You must be logged in to access this feature.');
+                window.location.href = 'login.html';
+            }
+        }
+        
+        // Attach handlers to menu items
+        if (addDiveSiteLink) addDiveSiteLink.addEventListener('click', handleAuthRequiredLink);
+        if (addScubaShopLink) addScubaShopLink.addEventListener('click', handleAuthRequiredLink);
+
+        updateAuthUI();
+
+        // Important: Redirect if not logged in when this page loads directly
+        if (!isLoggedIn) {
+            // No direct redirect, but the content will tell them to login.
+            // This allows the banner to still appear, but the main content area changes.
+        }
+    </script>
+</body>
+</html>

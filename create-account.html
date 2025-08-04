@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Create Account - The Dive Atlas</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #f0f8ff; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+        }
+        .form-container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 450px; 
+        }
+        h1 { 
+            color: #003366; 
+            text-align: center;
+            margin-bottom: 20px; 
+        }
+        
+        /* Styles for Account Type Selector */
+        .account-type-selector {
+            display: flex;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .account-type-option {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            background-color: #f9f9f9;
+            color: #555;
+            transition: background-color 0.2s, color 0.2s;
+            font-weight: bold;
+        }
+        .account-type-option:first-child {
+            border-right: 1px solid #ccc;
+        }
+        .account-type-option.active {
+            background-color: #003366;
+            color: white;
+        }
+
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+            color: #333; 
+        }
+        input[type="text"], input[type="email"], input[type="password"], select { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+            font-size: 1em;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            background-color: white;
+        }
+        input[type="file"]::file-selector-button {
+            padding: 8px 12px;
+            background-color: #eee;
+            border: none;
+            border-right: 1px solid #ccc;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        .form-group small {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.8em;
+            color: #777;
+        }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: #008CBA; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            font-size: 1em; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: background-color 0.2s; 
+            margin-top: 10px;
+        }
+        button:hover { 
+            background-color: #005f7a; 
+        }
+        .login-link { 
+            text-align: center; 
+            margin-top: 15px; 
+        }
+        .login-link a { 
+            color: #008CBA; 
+            text-decoration: none; 
+        }
+        .login-link a:hover { 
+            text-decoration: underline; 
+        }
+        #message { 
+            text-align: center; 
+            margin-bottom: 15px; 
+            font-weight: bold; 
+        }
+        .error { color: #f44336; }
+        .success { color: #4CAF50; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Create Your Dive Atlas Account</h1>
+
+        <div class="account-type-selector">
+            <div class="account-type-option active" data-type="Dive Account">Diver Account</div>
+            <div class="account-type-option" data-type="Dive Centre Account">Dive Centre Account</div>
+        </div>
+
+        <div id="message"></div>
+        
+        <form id="createAccountForm">
+            <input type="hidden" id="accountType" name="accountType" value="Dive Account">
+
+            <div id="diverFields">
+                <div class="form-group">
+                    <label for="diverProfilePhoto">Profile Photo</label>
+                    <input type="file" id="diverProfilePhoto" name="diverProfilePhoto" accept="image/*">
+                </div>
+                <div class="form-group">
+                    <label for="diverUsername">Username</label>
+                    <input type="text" id="diverUsername" name="diverUsername">
+                </div>
+                <div class="form-group">
+                    <label for="country">Country of Residence</label>
+                    <select id="country" name="country">
+                        </select>
+                </div>
+                <div class="form-group">
+                    <label for="diverEmail">Email</label>
+                    <input type="email" id="diverEmail" name="diverEmail">
+                </div>
+                <div class="form-group">
+                    <label for="diverPassword">Password</label>
+                    <input type="password" id="diverPassword" name="diverPassword">
+                </div>
+                <div class="form-group">
+                    <label for="diverConfirmPassword">Confirm Password</label>
+                    <input type="password" id="diverConfirmPassword" name="diverConfirmPassword">
+                </div>
+            </div>
+
+            <div id="diveCentreFields" style="display: none;">
+                <div class="form-group">
+                    <label for="centreProfilePhoto">Profile Photo</label>
+                    <input type="file" id="centreProfilePhoto" name="centreProfilePhoto" accept="image/*">
+                </div>
+                <div class="form-group">
+                    <label for="centreName">Dive Centre Name</label>
+                    <input type="text" id="centreName" name="centreName">
+                </div>
+                <div class="form-group">
+                    <label for="centreAddress">Address</label>
+                    <input type="text" id="centreAddress" name="centreAddress" placeholder="Start typing an address...">
+                    <small>Live address search requires backend API integration.</small>
+                </div>
+                <div class="form-group">
+                    <label for="centreEmail">Email Address</label>
+                    <input type="email" id="centreEmail" name="centreEmail">
+                </div>
+                <div class="form-group">
+                    <label for="centrePassword">Password</label>
+                    <input type="password" id="centrePassword" name="centrePassword">
+                </div>
+                <div class="form-group">
+                    <label for="centreConfirmPassword">Confirm Password</label>
+                    <input type="password" id="centreConfirmPassword" name="centreConfirmPassword">
+                </div>
+            </div>
+
+            <button type="submit">Create Account</button>
+        </form>
+
+        <div class="login-link">
+            <p>Already have an account? <a href="login.html">Log In</a></p>
+        </div>
+    </div>
+
+    <script>
+        // --- Populate Country Dropdown ---
+        const countries = ["Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia","Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo, Democratic Republic of the","Congo, Republic of the","Costa Rica","Cote d'Ivoire","Croatia","Cuba","Cyprus","Czechia","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Fiji","Finland","France","Gabon","Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana","Haiti","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"];
+        const countrySelect = document.getElementById('country');
+        
+        countrySelect.innerHTML = '<option value="">--Please choose a country--</option>'; // Add a default placeholder
+        countries.forEach(country => {
+            const option = document.createElement('option');
+            option.value = country;
+            option.textContent = country;
+            countrySelect.appendChild(option);
+        });
+
+
+        // --- Account Type Selection Logic ---
+        const accountTypeOptions = document.querySelectorAll('.account-type-option');
+        const accountTypeInput = document.getElementById('accountType');
+        const diverFields = document.getElementById('diverFields');
+        const diveCentreFields = document.getElementById('diveCentreFields');
+        
+        // Function to toggle the 'required' attribute on inputs
+        function setRequiredAttributes(container, isRequired) {
+            const inputs = container.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                if (input.type !== 'file') { // File uploads are optional
+                   input.required = isRequired;
+                }
+            });
+        }
+
+        accountTypeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                accountTypeOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                const selectedType = option.getAttribute('data-type');
+                accountTypeInput.value = selectedType;
+
+                if (selectedType === 'Dive Account') {
+                    diverFields.style.display = 'block';
+                    setRequiredAttributes(diverFields, true);
+                    
+                    diveCentreFields.style.display = 'none';
+                    setRequiredAttributes(diveCentreFields, false);
+                } else { // Dive Centre Account
+                    diverFields.style.display = 'none';
+                    setRequiredAttributes(diverFields, false);
+
+                    diveCentreFields.style.display = 'block';
+                    setRequiredAttributes(diveCentreFields, true);
+                }
+            });
+        });
+        
+        // Set initial required fields on page load
+        setRequiredAttributes(diverFields, true);
+        setRequiredAttributes(diveCentreFields, false);
+
+
+        // --- Form Submission Logic ---
+        document.getElementById('createAccountForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const accountType = accountTypeInput.value;
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = '';
+            messageDiv.className = '';
+
+            let newUser = { accountType };
+            let password, confirmPassword, email;
+
+            // Collect data and validate based on account type
+            if (accountType === 'Dive Account') {
+                newUser.username = document.getElementById('diverUsername').value.trim();
+                newUser.country = document.getElementById('country').value;
+                email = document.getElementById('diverEmail').value.trim();
+                password = document.getElementById('diverPassword').value;
+                confirmPassword = document.getElementById('diverConfirmPassword').value;
+                
+                if (!newUser.username || !newUser.country || !email || !password) {
+                    messageDiv.textContent = 'Please fill all required fields.';
+                    messageDiv.classList.add('error');
+                    return;
+                }
+            } else { // Dive Centre Account
+                newUser.centreName = document.getElementById('centreName').value.trim();
+                newUser.address = document.getElementById('centreAddress').value.trim();
+                email = document.getElementById('centreEmail').value.trim();
+                password = document.getElementById('centrePassword').value;
+                confirmPassword = document.getElementById('centreConfirmPassword').value;
+                
+                if (!newUser.centreName || !newUser.address || !email || !password) {
+                    messageDiv.textContent = 'Please fill all required fields.';
+                    messageDiv.classList.add('error');
+                    return;
+                }
+            }
+            
+            newUser.email = email;
+
+            // Common Validation
+            if (password !== confirmPassword) {
+                messageDiv.textContent = 'Passwords do not match.';
+                messageDiv.classList.add('error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                messageDiv.textContent = 'Password must be at least 6 characters long.';
+                messageDiv.classList.add('error');
+                return;
+            }
+
+            // --- Check for existing user (simulated) ---
+            const users = JSON.parse(localStorage.getItem('diveAtlasUsers')) || [];
+            const userExists = users.some(user => user.email.toLowerCase() === email.toLowerCase());
+
+            if (userExists) {
+                messageDiv.textContent = 'A user with that email already exists.';
+                messageDiv.classList.add('error');
+                return;
+            }
+
+            // --- Save new user (simulated) ---
+            newUser.password = password; // In a real app, hash this server-side
+            users.push(newUser);
+            localStorage.setItem('diveAtlasUsers', JSON.stringify(users));
+
+            // --- Success ---
+            messageDiv.textContent = 'Account created successfully! Redirecting to login...';
+            messageDiv.classList.add('success');
+
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+        });
+    </script>
+<!-- Static App Form Collection Script -->
+<script src="https://static.app/js/static-forms.js" type="text/javascript"></script>
+</body>
+</html>

@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Feed - The Dive Atlas</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background: #003366;
+            color: white;
+            padding: 0.5rem 20px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            position: relative;
+        }
+        header h1 {
+            margin: 0;
+            padding: 0;
+            font-size: 1.8em;
+        }
+
+        /* Menu Styles (copied for consistency) */
+        .menu-container {
+            position: relative;
+            display: inline-block;
+        }
+        .menu-button {
+            background-color: #004d99;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            width: 45px;
+            height: 40px;
+            padding: 5px;
+        }
+        .menu-button:hover {
+            background-color: #0066cc;
+        }
+        .hamburger-icon {
+            width: 25px;
+            height: 3px;
+            background-color: white;
+            border-radius: 2px;
+        }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 180px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1003;
+            border-radius: 5px;
+            left: 0;
+            margin-top: 5px;
+            list-style: none;
+            padding: 0;
+        }
+        .dropdown-menu li a {
+            color: #003366;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+            transition: background-color 0.2s ease;
+            white-space: nowrap;
+        }
+        .dropdown-menu li a:hover {
+            background-color: #f0f0f0;
+        }
+        .menu-container:hover .dropdown-menu {
+            display: block;
+        }
+        .user-info {
+            color: white;
+            font-size: 0.9em;
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .user-info button {
+            background: none;
+            border: 1px solid white;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .user-info button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        /* End Menu Styles */
+
+        .feed-container {
+            flex-grow: 1;
+            max-width: 700px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #003366;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .feed-filters {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .feed-filters button {
+            background-color: #008CBA;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin: 0 5px;
+            transition: background-color 0.3s ease;
+        }
+        .feed-filters button.active,
+        .feed-filters button:hover {
+            background-color: #005f7a;
+        }
+        .feed-item {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        .feed-item .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #00CED1;
+        }
+        .feed-item-content {
+            flex-grow: 1;
+        }
+        .feed-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .feed-item-header .username {
+            font-weight: bold;
+            color: #003366;
+            font-size: 1.1em;
+        }
+        .feed-item-header .timestamp {
+            font-size: 0.8em;
+            color: #777;
+        }
+        .feed-item-body {
+            font-size: 0.95em;
+            line-height: 1.4;
+            color: #333;
+        }
+        .feed-item-body .location-link { /* New style for clickable location */
+            font-weight: bold;
+            color: #008CBA;
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .feed-item-body .location-link:hover {
+            color: #005f7a;
+            text-decoration: underline;
+        }
+        .feed-item-photos {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px; /* For scrollbar */
+        }
+        .feed-item-photos img {
+            width: 100px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+        .feed-item .follow-button {
+            background-color: #4CAF50; /* Green */
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background-color 0.3s ease;
+        }
+        .feed-item .follow-button:hover {
+            background-color: #45a049;
+        }
+        .feed-item .follow-button.following {
+            background-color: #6c757d; /* Grey */
+        }
+        .feed-item .follow-button.following:hover {
+            background-color: #5a6268;
+        }
+        .review-stars {
+            color: gold;
+        }
+
+        .back-button-container {
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+        .back-button {
+            background-color: #6c757d; /* Grey */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+        }
+        .back-button:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <header id="app-header">
+        <div class="menu-container">
+            <button class="menu-button" aria-label="Menu">
+                <div class="hamburger-icon"></div>
+                <div class="hamburger-icon"></div>
+                <div class="hamburger-icon"></div>
+            </button>
+            <ul class="dropdown-menu">
+                <li id="myAccountMenuItem"><a href="#" id="myAccountLink">My Account</a></li>
+                <li id="addDiveSiteMenuItem"><a href="#" id="addDiveSiteLink">Add a Dive Site</a></li>
+                <li id="addScubaShopMenuItem"><a href="#" id="addScubaShopLink">Add a Scuba Shop</a></li>
+                <li><a href="my-top-5-dive-sites.html">My Top 5 Dive Sites</a></li>
+                <li><a href="where-ive-dived.html">Where I've Dived</a></li>
+                <li><a href="feed.html" id="feedLink">Activity Feed</a></li>
+            </ul>
+        </div>
+        <h1>Activity Feed</h1>
+        <div class="user-info">
+            <span id="loggedInUsername"></span>
+            <button id="authButton"></button>
+        </div>
+    </header>
+
+    <div class="feed-container">
+        <h2>What's Happening in The Dive Atlas</h2>
+
+        <div class="feed-filters">
+            <button id="filter-all" class="active">All Activity</button>
+            <button id="filter-following">Following</button>
+        </div>
+
+        <div id="feed-list">
+            </div>
+
+        <div class="back-button-container">
+            <a href="index.html" class="back-button">Back to Map</a>
+        </div>
+    </div>
+
+    <script>
+        // --- Header and Menu Logic (Copied for consistency) ---
+        let isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        let loggedInUser = localStorage.getItem('loggedInUser');
+        const authButton = document.getElementById('authButton');
+        const loggedInUsernameSpan = document.getElementById('loggedInUsername');
+        const myAccountLink = document.getElementById('myAccountLink');
+        const addDiveSiteLink = document.getElementById('addDiveSiteLink');
+        const addScubaShopLink = document.getElementById('addScubaShopLink');
+        const feedLink = document.getElementById('feedLink');
+
+        function updateAuthUI() {
+            if (isLoggedIn) {
+                loggedInUsernameSpan.textContent = `Hello, ${loggedInUser || 'User'}!`;
+                authButton.textContent = 'Logout';
+                authButton.onclick = function() {
+                    localStorage.setItem('isLoggedIn', 'false');
+                    localStorage.removeItem('loggedInUser');
+                    localStorage.removeItem('loggedInEmail');
+                    isLoggedIn = false;
+                    loggedInUser = null;
+                    updateAuthUI();
+                    window.location.href = 'login.html';
+                };
+                myAccountLink.href = 'my-account.html';
+            } else {
+                loggedInUsernameSpan.textContent = '';
+                authButton.textContent = 'Login';
+                authButton.onclick = function() {
+                    window.location.href = 'login.html';
+                };
+                myAccountLink.href = 'login.html';
+            }
+            if (feedLink) feedLink.href = 'feed.html';
+        }
+
+        function handleAuthRequiredLink(e) {
+            if (!isLoggedIn) {
+                e.preventDefault();
+                alert('You must be logged in to access this feature.');
+                window.location.href = 'login.html';
+            }
+        }
+        
+        if (addDiveSiteLink) addDiveSiteLink.addEventListener('click', handleAuthRequiredLink);
+        if (addScubaShopLink) addScubaShopLink.addEventListener('click', handleAuthRequiredLink);
+
+        updateAuthUI();
+
+        // --- Feed Specific Logic ---
+        const feedList = document.getElementById('feed-list');
+        const filterAllBtn = document.getElementById('filter-all');
+        const filterFollowingBtn = document.getElementById('filter-following');
+
+        // Dummy Data for the Feed
+        // IMPORTANT: Ensure these lat/lng/id values match actual markers on your map (dive-data.js or user-added)
+        // For 'newDiveSite' and 'review', use IDs from dive-data.js if possible.
+        // For 'newScubaShop', use unique IDs for your dummy shops.
+        const dummyActivities = [
+            {
+                id: 2,
+                user: { id: 'diver1', name: 'OceanExplorer88', avatar: 'images/user-avatar-1.png' },
+                type: 'newDiveSite',
+                // This corresponds to 'Blue Hole, Belize' (assuming ID 1 in dive-data.js)
+                location: { id: 2, name: 'Blue Hole, Belize', lat: 17.316, lng: -87.535, itemType: 'diveSite' }, 
+                timestamp: '2 hours ago',
+                isFollowed: false
+            },
+            {
+                id: 3,
+                user: { id: 'diver2', name: 'ReefLoverJane', avatar: 'images/user-avatar-2.png' },
+                type: 'review',
+                // This corresponds to 'Thistlegorm Wreck, Egypt' (assuming ID 2 in dive-data.js)
+                location: { id: 3, name: 'Thistlegorm Wreck, Egypt', lat: 27.801, lng: 33.921, itemType: 'diveSite' }, 
+                reviewStars: 5,
+                reviewComment: "Absolutely breathtaking! Visibility was amazing and saw so many sharks!",
+                timestamp: '5 hours ago',
+                isFollowed: false
+            },
+            {
+                id: 1,
+                user: { id: 'diver3', name: 'ScubaSteve', avatar: 'images/user-avatar-3.png' },
+                type: 'photos',
+                // This corresponds to 'Great Barrier Reef (Ribbon Reefs)' (assuming ID 3 in dive-data.js)
+                location: { id: 1, name: 'Great Barrier Reef (Ribbon Reefs)', lat: -16.817, lng: 145.766, itemType: 'diveSite' }, 
+                photos: ['images/photo-liberty1.jpg', 'images/photo-liberty2.jpg'], // Dummy photos for this location
+                timestamp: '1 day ago',
+                isFollowed: false
+            },
+            {
+                id: 4,
+                user: { id: 'diver4', name: 'DeepDiveDave', avatar: 'images/user-avatar-4.png' },
+                type: 'newScubaShop',
+                // Example of a user-added shop. Its ID should be distinct from dive site IDs.
+                location: { id: 'shop101', name: 'Dive Pro Shop, Miami', lat: 25.774, lng: -80.190, itemType: 'scubaShop' }, 
+                timestamp: '2 days ago',
+                isFollowed: true
+            },
+            {
+                id: 5,
+                user: { id: 'diver1', name: 'OceanExplorer88', avatar: 'images/user-avatar-1.png' },
+                type: 'review',
+                // This corresponds to 'Richelieu Rock, Thailand' (assuming ID 4 in dive-data.js)
+                location: { id: 5, name: 'Richelieu Rock, Thailand', lat: 9.389, lng: 97.838, itemType: 'diveSite' }, 
+                reviewStars: 4,
+                reviewComment: "Great place for macro, but currents can be tricky.",
+                timestamp: '3 days ago',
+                isFollowed: false
+            },
+            {
+                id: 6,
+                user: { id: 'diver5', name: 'AquaAlice', avatar: 'images/user-avatar-5.png' },
+                type: 'photos',
+                // This corresponds to 'Sipadan Island, Malaysia' (assuming ID 5 in dive-data.js)
+                location: { id: 4, name: 'Sipadan Island, Malaysia', lat: 4.116, lng: 118.628, itemType: 'diveSite' }, 
+                photos: ['images/photo-sipadan1.jpg'],
+                timestamp: '4 days ago',
+                isFollowed: true
+            },
+            {
+                id: 7,
+                user: { id: 'diver6', name: 'CoralKid', avatar: 'images/user-avatar-6.png' },
+                type: 'newDiveSite',
+                // Example of a user-added dive site. Lat/Lng should match what a user would add.
+                location: { id: 'dsUser001', name: 'Secret Cove, Hawaii', lat: 19.65, lng: -155.99, itemType: 'diveSite' }, 
+                timestamp: '1 week ago',
+                isFollowed: false
+            }
+        ];
+
+        // Simulate local storage for followed users
+        let followedUsers = JSON.parse(localStorage.getItem('followedDivers')) || [];
+
+        function getStarRating(score) {
+            const fullStars = '&#9733;'.repeat(Math.floor(score)); // Unicode for solid star
+            const halfStar = (score % 1 >= 0.5) ? '&#189;' : ''; // Unicode for half star (though we use full stars)
+            const emptyStars = '&#9734;'.repeat(5 - Math.ceil(score)); // Unicode for empty star
+            return fullStars + halfStar + emptyStars;
+        }
+
+        function renderFeed(filter) {
+            feedList.innerHTML = ''; // Clear current feed
+
+            let filteredActivities = dummyActivities;
+            if (filter === 'following') {
+                if (!isLoggedIn) {
+                    feedList.innerHTML = '<p style="text-align: center; margin-top: 20px; color: #555;">Please log in to see activities from divers you follow.</p>';
+                    return;
+                }
+                filteredActivities = dummyActivities.filter(activity => followedUsers.includes(activity.user.id));
+                if (filteredActivities.length === 0) {
+                     feedList.innerHTML = '<p style="text-align: center; margin-top: 20px; color: #555;">You are not following any divers yet, or they haven\'t posted. Follow divers to see their activity here!</p>';
+                     return;
+                }
+            } else if (filter === 'all' && dummyActivities.length === 0) {
+                feedList.innerHTML = '<p style="text-align: center; margin-top: 20px; color: #555;">No activity to display yet.</p>';
+                return;
+            }
+
+
+            filteredActivities.forEach(activity => {
+                const isUserFollowed = followedUsers.includes(activity.user.id);
+                
+                // Construct the link for the location
+                // IMPORTANT: Changed link URL from diveatlas11.html to index.html
+                const locationLinkHtml = activity.location.name ? 
+                    `<a href="index.html?id=${activity.location.id}&lat=${activity.location.lat}&lng=${activity.location.lng}&type=${activity.location.itemType}" class="location-link" target="_blank">${activity.location.name}</a>` :
+                    activity.location.name; // Fallback if no lat/lng/id
+
+                let activityHtml = '';
+                if (activity.type === 'newDiveSite') {
+                    activityHtml = `<p>uploaded a new dive site: ${locationLinkHtml}</p>`;
+                } else if (activity.type === 'newScubaShop') {
+                    activityHtml = `<p>added a new scuba shop: ${locationLinkHtml}</p>`;
+                } else if (activity.type === 'review') {
+                    activityHtml = `
+                        <p>added a review for ${locationLinkHtml}:</p>
+                        <p><span class="review-stars">${getStarRating(activity.reviewStars)}</span> "${activity.reviewComment}"</p>
+                    `;
+                } else if (activity.type === 'photos') {
+                    activityHtml = `
+                        <p>uploaded new pictures for ${locationLinkHtml}:</p>
+                        <div class="feed-item-photos">
+                            ${activity.photos.map(photo => `<img src="${photo}" alt="Dive photo">`).join('')}
+                        </div>
+                    `;
+                }
+
+                const followButtonHtml = isLoggedIn && loggedInUser !== activity.user.name ? 
+                    `<button class="follow-button ${isUserFollowed ? 'following' : ''}" data-user-id="${activity.user.id}">
+                        ${isUserFollowed ? 'Following' : 'Follow'}
+                    </button>` : '';
+
+
+                const feedItem = document.createElement('div');
+                feedItem.className = 'feed-item';
+                feedItem.innerHTML = `
+                    <img src="${activity.user.avatar}" alt="${activity.user.name}'s avatar" class="user-avatar">
+                    <div class="feed-item-content">
+                        <div class="feed-item-header">
+                            <span class="username">${activity.user.name}</span>
+                            ${followButtonHtml}
+                            <span class="timestamp">${activity.timestamp}</span>
+                        </div>
+                        <div class="feed-item-body">
+                            ${activityHtml}
+                        </div>
+                    </div>
+                `;
+                feedList.appendChild(feedItem);
+            });
+
+            // Add event listeners to follow/unfollow buttons
+            feedList.querySelectorAll('.follow-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const userId = this.dataset.userId;
+                    toggleFollow(userId, this);
+                });
+            });
+        }
+
+        function toggleFollow(userId, buttonElement) {
+            if (!isLoggedIn) {
+                alert('You must be logged in to follow other divers.');
+                window.location.href = 'login.html';
+                return;
+            }
+            if (followedUsers.includes(userId)) {
+                // Unfollow
+                followedUsers = followedUsers.filter(id => id !== userId);
+                buttonElement.classList.remove('following');
+                buttonElement.textContent = 'Follow';
+            } else {
+                // Follow
+                followedUsers.push(userId);
+                buttonElement.classList.add('following');
+                buttonElement.textContent = 'Following';
+            }
+            localStorage.setItem('followedDivers', JSON.stringify(followedUsers));
+            // Re-render the feed to reflect changes if 'Following' filter is active
+            if (filterFollowingBtn.classList.contains('active')) {
+                renderFeed('following');
+            }
+        }
+
+
+        // Event listeners for filters
+        filterAllBtn.addEventListener('click', () => {
+            filterAllBtn.classList.add('active');
+            filterFollowingBtn.classList.remove('active');
+            renderFeed('all');
+        });
+
+        filterFollowingBtn.addEventListener('click', () => {
+            filterFollowingBtn.classList.add('active');
+            filterAllBtn.classList.remove('active');
+            renderFeed('following');
+        });
+
+        // Initial render
+        renderFeed('all');
+    </script>
+</body>
+</html>

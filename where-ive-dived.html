@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Where I've Dived - The Dive Atlas</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="dive-data.js"></script> 
+  <style>
+    /* Basic Reset & Body Styling */
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      height: 100%;
+      background-color: #f4f7f6; /* Light background */
+      color: #333;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh; /* Ensure body takes full viewport height */
+    }
+
+    /* Header Styles (Consistent with Diveatlas11.html) */
+    header {
+      background: #003366;
+      color: white;
+      padding: 0.5rem 20px;
+      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      position: relative;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    header h1 {
+      margin: 0;
+      padding: 0;
+      font-size: 1.8em;
+    }
+
+    /* Menu Styles (Consistent with Diveatlas11.html) */
+    .menu-container {
+      position: relative;
+      display: inline-block;
+    }
+    .menu-button {
+      background-color: #004d99;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background-color 0.3s ease;
+    }
+    .menu-button:hover {
+      background-color: #0066cc;
+    }
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      background-color: white;
+      min-width: 180px;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      z-index: 1003;
+      border-radius: 5px;
+      left: 0;
+      margin-top: 5px;
+      list-style: none;
+      padding: 0;
+    }
+    .dropdown-menu li a {
+      color: #003366;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+      text-align: left;
+      transition: background-color 0.2s ease;
+      white-space: nowrap;
+    }
+    .dropdown-menu li a:hover {
+      background-color: #f0f0f0;
+    }
+    .menu-container:hover .dropdown-menu {
+      display: block;
+    }
+
+    /* Main Content Area - Similar to your .container, renamed to avoid conflict with shared styles */
+    .main-content {
+      flex-grow: 1; /* Takes up remaining vertical space */
+      padding: 20px;
+      max-width: 800px; /* Limit content width */
+      margin: 20px auto; /* Center content and add vertical margin */
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* Soft shadow */
+    }
+    h2 {
+      color: #003366;
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 25px;
+      font-size: 2em;
+    }
+
+    /* Dived Sites List Specific Styles - adapted from your original */
+    #dived-sites-list {
+        /* Adjusted to be a flex column for better flow with variable height items */
+        display: flex;
+        flex-direction: column;
+        gap: 15px; /* Space between dive site cards */
+    }
+
+    .dive-site-item { /* Renamed from dive-site-card to match your original */
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        display: flex; /* Changed to flex for internal layout */
+        flex-direction: column; /* Arrange content vertically within each item */
+        position: relative; /* For positioning the undive button if desired */
+    }
+
+    .dive-site-item h3 {
+        color: #003366;
+        margin-top: 0;
+        margin-bottom: 5px; /* Reduced margin */
+        font-size: 1.4em;
+    }
+
+    .dive-site-item p {
+        margin-bottom: 5px;
+        line-height: 1.4;
+    }
+    
+    /* New styling for photo container and photos within the item */
+    .photo-container {
+      display: flex;
+      overflow-x: auto; /* Allow horizontal scrolling for photos */
+      gap: 8px;
+      padding: 8px 0;
+      margin: 10px 0;
+      background: #f0f8ff;
+      border-radius: 4px; 
+      flex-shrink: 0; /* Prevent container from shrinking */
+    }
+
+    .dive-photo {
+        height: 100px; /* Fixed height for photos */
+        width: auto;
+        max-width: 150px;
+        border-radius: 4px;
+        object-fit: cover; /* Crop photos to fit */
+        border: 2px solid #00CED1;
+    }
+
+    /* Reviews section */
+    .reviews {
+        font-size: 0.9em;
+        margin-top: 10px;
+        border-top: 1px solid #eee;
+        padding-top: 8px;
+    }
+
+    .review-item {
+        margin-bottom: 5px;
+        padding-bottom: 5px;
+        border-bottom: 1px dashed #eee;
+    }
+    .review-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0; /* Remove extra margin for last review */
+    }
+
+    .review-author {
+        font-weight: bold;
+        color: #003366;
+    }
+    .review-stars {
+        color: gold;
+    }
+
+    /* Undive button */
+    .undive-btn {
+        background-color: #dc3545; /* Red for undive */
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 15px; /* Space from content above */
+        align-self: flex-start; /* Align button to start of its flex container */
+        transition: background-color 0.3s ease;
+    }
+    .undive-btn:hover {
+        background-color: #c82333;
+    }
+
+    #no-dives-message { /* Renamed from .no-dives-message for consistency with other pages */
+        text-align: center;
+        color: #666;
+        font-style: italic;
+        margin-top: 50px;
+        font-size: 1.1em;
+    }
+
+    /* Back button container and button styles, consistent with other pages */
+    .back-button-container {
+      text-align: center;
+      margin-top: 30px;
+      margin-bottom: 20px;
+    }
+    .back-button {
+      background-color: #6c757d; /* Grey */
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      text-decoration: none;
+      display: inline-block;
+      transition: background-color 0.3s ease;
+    }
+    .back-button:hover {
+      background-color: #5a6268;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="menu-container">
+      <button class="menu-button">Menu</button>
+      <ul class="dropdown-menu">
+        <li><a href="my-account.html">My Account</a></li>
+        <li><a href="add-dive-site.html">Add a Dive Site</a></li>
+        <li><a href="add-scuba-shop.html">Add a Scuba Shop</a></li>
+        <li><a href="my-top-5-dive-sites.html">My Top 5 Dive Sites</a></li>
+        <li><a href="where-ive-dived.html">Where I've Dived</a></li>
+      </ul>
+    </div>
+    <h1>Where I've Dived</h1>
+  </header>
+
+  <div class="main-content">
+    <h2>My Logged Dives</h2>
+    <div id="dived-sites-list">
+      </div>
+    <p id="no-dives-message" style="display: none;">You haven't marked any dive sites as 'dived' yet. Go to the map and click "I've Dived Here" on a marker!</p>
+    
+    <div class="back-button-container">
+      <a href="index.html" class="back-button">Back to Map</a>
+    </div>
+
+  </div>
+
+  <script src="dive-data.js"></script> 
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Dropdown menu functionality (copied for consistency)
+      const menuButton = document.querySelector('.menu-button');
+      const dropdownMenu = document.querySelector('.dropdown-menu');
+
+      if (menuButton && dropdownMenu) {
+          menuButton.addEventListener('click', function(event) {
+              dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+              event.stopPropagation();
+          });
+
+          document.addEventListener('click', function(event) {
+              if (!menuButton.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                  dropdownMenu.style.display = 'none';
+              }
+          });
+      }
+
+      // --- Dived Sites Display Logic ---
+      const divedSitesListContainer = document.getElementById('dived-sites-list');
+      const noDivesMessage = document.getElementById('no-dives-message');
+
+      const LOCAL_STORAGE_KEY_DIVES = 'diveAtlasDivedSites'; // Key for logged dives
+      const LOCAL_STORAGE_KEY_USER_DIVES = 'userAddedDiveSites'; // Key for user-added dive sites
+
+      function getStarRating(score) {
+          if (isNaN(score) || score === 0) return 'No rating yet'; // Handle cases with no reviews or 0 score
+          const fullStars = '★'.repeat(Math.floor(score));
+          const halfStar = (score % 1 >= 0.5) ? '½' : '';
+          const emptyStars = '☆'.repeat(5 - Math.ceil(score));
+          return fullStars + halfStar + emptyStars;
+      }
+
+      function loadDivedSites() {
+          // 1. Get the IDs of sites the user has marked as "dived"
+          let divedSiteIds = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_DIVES)) || [];
+
+          // 2. Load all available dive sites (from dive-data.js and user-added)
+          let allDiveSites = [...diveSites]; // From dive-data.js
+          const userAddedDiveSites = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_USER_DIVES)) || [];
+          allDiveSites = allDiveSites.concat(userAddedDiveSites);
+
+          // 3. Filter to get the full details of the dived sites
+          const divedSiteDetails = allDiveSites.filter(site => divedSiteIds.includes(site.id));
+
+          // 4. Clear previous list and display new list
+          divedSitesListContainer.innerHTML = ''; // Clear existing content
+
+          if (divedSiteDetails.length === 0) {
+              noDivesMessage.style.display = 'block';
+          } else {
+              noDivesMessage.style.display = 'none';
+              divedSiteDetails.forEach(site => {
+                  const totalStars = site.reviews.reduce((sum, review) => sum + review.stars, 0);
+                  const averageRating = totalStars / site.reviews.length;
+                  const ratingStars = getStarRating(averageRating);
+
+                  const card = document.createElement('div');
+                  card.classList.add('dive-site-item'); // Keep your class name
+                  card.setAttribute('data-site-id', site.id); // Store ID for undive button
+
+                  card.innerHTML = `
+                      <h3>${site.name}</h3>
+                      <p><strong>Depth:</strong> ${site.depth}</p>
+                      ${site.description ? `<p>${site.description}</p>` : ''}
+                      <p><strong>Rating:</strong> <span class="review-stars">${ratingStars}</span> (${averageRating.toFixed(1)}/5)</p>
+                      
+                      <div class="photo-container">
+                          ${site.photos && site.photos.length > 0 ? 
+                              site.photos.map(photo => `<img src="${photo}" class="dive-photo" alt="${site.name}">`).join('') :
+                              '<p>No photos available for this site.</p>'}
+                      </div>
+                      
+                      <div class="reviews">
+                          <h4>User Reviews:</h4>
+                          ${site.reviews && site.reviews.length > 0 ? 
+                              site.reviews.map(review => `
+                                  <div class="review-item">
+                                      <p><span class="review-author">${review.author}:</span> <span class="review-stars">${getStarRating(review.stars)}</span></p>
+                                      <p>"${review.comment}"</p>
+                                  </div>
+                              `).join('') :
+                              '<p>No reviews yet for this site.</p>'}
+                      </div>
+                      <button class="undive-btn" data-site="${site.id}">Undive This Site</button>
+                  `;
+                  divedSitesListContainer.appendChild(card);
+              });
+
+              // Attach event listeners to the "Undive" buttons after they are added to the DOM
+              document.querySelectorAll('.undive-btn').forEach(button => {
+                  button.addEventListener('click', function() {
+                      const siteIdToRemove = parseInt(this.dataset.site);
+                      let currentDivedIds = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_DIVES)) || [];
+                      
+                      // Remove the ID from the dived list
+                      currentDivedIds = currentDivedIds.filter(id => id !== siteIdToRemove);
+                      localStorage.setItem(LOCAL_STORAGE_KEY_DIVES, JSON.stringify(currentDivedIds));
+                      
+                      // Reload the list to reflect the change
+                      loadDivedSites();
+                  });
+              });
+          }
+      }
+
+      // Load sites when the page loads
+      loadDivedSites();
+    });
+  </script>
+
+  
+</body>
+</html>

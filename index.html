@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>The Dive Atlas</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5518829091863921" crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="dive-data.js"></script>
+  <style>
+    /* Use flexbox for a robust full-height layout */
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif; /* Added sans-serif fallback */
+      height: 100%; /* Ensure html and body take full viewport height */
+      overflow: hidden; /* Prevent body scroll if content overflows */
+    }
+    body {
+      display: flex;
+      flex-direction: column; /* Arrange children vertically */
+    }
+    header {
+      background: #003366;
+      color: white;
+      padding: 0.5rem 20px; /* Adjusted padding to give space on sides */
+      text-align: center;
+      display: flex; /* Use flexbox for centering content */
+      justify-content: space-between; /* Pushes content to ends */
+      align-items: center;
+      flex-shrink: 0; /* Prevent header from shrinking */
+      position: relative; /* Essential for menu positioning */
+      z-index: 1001; /* Ensure header is above the map */
+    }
+    header h1 { /* Style for the new title text */
+      margin: 0;
+      padding: 0;
+      font-size: 1.8em; /* Adjust size as needed */
+    }
+
+    /* --- New Menu Styles --- */
+    .menu-container {
+      position: relative; /* Important for dropdown positioning */
+      display: inline-block; /* Allows button to size to content */
+    }
+    .menu-button {
+      background-color: #004d99; /* Slightly different shade for button */
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background-color 0.3s ease;
+      display: flex;
+      flex-direction: column; /* Stack lines vertically */
+      justify-content: space-around; /* Distribute space between lines */
+      align-items: center;
+      width: 45px; /* Adjust width/height to make icon visible */
+      height: 40px;
+      padding: 5px; /* Padding inside the button to give space around lines */
+    }
+    .menu-button:hover {
+      background-color: #0066cc;
+    }
+    .hamburger-icon {
+      width: 25px; /* Width of each line */
+      height: 3px; /* Thickness of each line */
+      background-color: white; /* Color of the lines */
+      border-radius: 2px; /* Slightly rounded corners for the lines */
+    }
+    .dropdown-menu {
+      display: none; /* Hidden by default */
+      position: absolute;
+      background-color: white;
+      min-width: 180px; /* Ensure menu is wide enough */
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      z-index: 1003; /* Ensure it's above everything else when open */
+      border-radius: 5px;
+      left: 0; /* Align to the left of the button */
+      margin-top: 5px; /* Small gap below button */
+      list-style: none; /* Remove bullet points */
+      padding: 0; /* Remove default list padding */
+    }
+    .dropdown-menu li a {
+      color: #003366;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+      text-align: left;
+      transition: background-color 0.2s ease;
+      white-space: nowrap; /* Prevent text wrapping */
+    }
+    .dropdown-menu li a:hover {
+      background-color: #f0f0f0;
+    }
+    .menu-container:hover .dropdown-menu {
+      display: block;
+    }
+    .user-info {
+        color: white;
+        font-size: 0.9em;
+        margin-left: auto; /* Push to the right */
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .user-info button {
+        background: none;
+        border: 1px solid white;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    .user-info button:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+    /* --- End New Menu Styles --- */
+
+    #map {
+      flex-grow: 1; /* Map takes all available remaining vertical space */
+      width: 100%;
+      position: relative;
+    }
+
+    /* FIX: This rule specifically targets the Leaflet image tiles and ensures they don't get messed up */
+    .leaflet-tile-pane img.leaflet-tile {
+        max-width: none !important;
+        width: 256px !important;
+        height: 256px !important;
+    }
+
+    /* New style for the floating logo */
+    #floating-logo {
+      position: absolute; /* Float it over the map */
+      top: 10px;    /* Distance from top of map */
+      left: 10px;   /* Distance from left of map */
+      height: 150px; /* Made bigger */
+      width: auto;  /* Maintain aspect ratio */
+      z-index: 999; /* Ensure it's behind popups (which are 1000) */
+    }
+
+    /* Styles for the button container, now floating over the map in the top right */
+    #map-controls {
+      position: absolute;
+      top: 10px;    /* Distance from top of map */
+      right: 10px;  /* Distance from right of map */
+      z-index: 1001; /* Ensure it's above map layers */
+      padding: 0;
+      text-align: right;
+      display: flex; /* Use flexbox to arrange items vertically */
+      flex-direction: column;
+      align-items: flex-end; /* Align items to the right */
+      gap: 8px; /* Space between buttons */
+    }
+    #map-controls button {
+      background: #003366;
+      color: white;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* Adjust Leaflet's default zoom controls to be part of #map-controls */
+    .leaflet-control-zoom {
+        position: static !important; /* Override Leaflet's absolute positioning */
+        margin-top: 0 !important; /* Reset default margin */
+        margin-left: 0 !important; /* Reset default margin */
+        border-radius: 4px; /* Match button style */
+        overflow: hidden; /* Contains inner buttons */
+        box-shadow: none; /* Remove default shadow if desired */
+    }
+    .leaflet-control-zoom-in, .leaflet-control-zoom-out {
+        background: #003366; /* Match map-controls button background */
+        color: white;
+        border: none;
+        padding: 5px 10px; /* Adjust padding as needed */
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        cursor: pointer;
+        height: auto;
+        line-height: normal;
+    }
+    .leaflet-control-zoom-in {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3); /* Separator */
+        border-radius: 4px 4px 0 0; /* Top corners rounded */
+    }
+    .leaflet-control-zoom-out {
+        border-radius: 0 0 4px 4px; /* Bottom corners rounded */
+    }
+
+    /* Custom Floating Add Button */
+    #add-location-button {
+        position: absolute;
+        bottom: 20px; /* From bottom */
+        right: 20px; /* From right */
+        background-color: #008CBA; /* Blue */
+        color: white;
+        border-radius: 8px; /* Rounded rectangle */
+        border: none;
+        font-size: 1.1em;
+        font-weight: bold;
+        padding: 10px 15px;
+        box-shadow: 0px 4px 8px rgba(0,0,0,0.3);
+        cursor: pointer;
+        z-index: 1002; /* Above map controls, below popups */
+        transition: background-color 0.2s ease;
+        white-space: nowrap;
+    }
+    #add-location-button:hover {
+        background-color: #005f7a;
+    }
+
+    /* Control container for confirm/cancel buttons */
+    #location-selection-controls {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%); /* Center horizontally */
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 10px 15px;
+        border-radius: 8px;
+        box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+        z-index: 1002;
+        display: none; /* Hidden by default - IMPORTANT CHANGE */
+        gap: 10px;
+        white-space: nowrap; /* Prevent buttons from wrapping */
+    }
+    #location-selection-controls button {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    #location-selection-controls #confirm-location-btn {
+        background-color: #4CAF50; /* Green */
+        color: white;
+    }
+    #location-selection-controls #confirm-location-btn:hover {
+        background-color: #45a049;
+    }
+    #location-selection-controls #cancel-location-btn {
+        background-color: #f44336; /* Red */
+        color: white;
+    }
+    #location-selection-controls #cancel-location-btn:hover {
+        background-color: #da190b;
+    }
+
+    /* Style for the fixed "crosshairs" or center pin */
+    #center-pin {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%); /* Exactly centers the pin's base */
+        width: 25px; /* Adjust to match your marker icon width */
+        height: 41px; /* Adjust to match your marker icon height */
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center bottom; /* Align image to the bottom center */
+        pointer-events: none; /* Allow map interaction *through* the pin */
+        z-index: 1001; /* Ensure it's above map but below controls */
+        display: none; /* Hidden by default */
+    }
+
+    /* Custom Fixed Popup Styling */
+    #fixed-popup-container {
+      position: absolute;
+      left: 20px;
+      width: 300px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      z-index: 1000; /* Popup should be above map and logo */
+      overflow-y: auto; /* Allow scrolling for long content */
+      display: none; /* Hidden by default */
+      box-sizing: border-box; /* Include padding in width/height */
+    }
+    #fixed-popup-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 1.5em;
+      cursor: pointer;
+      color: #333;
+    }
+    .dive-photo, .shop-photo {
+      height: 120px;
+      width: auto;
+      max-width: 160px;
+      margin-right: 5px;
+      border-radius: 4px;
+      object-fit: cover;
+      border: 2px solid #00CED1;
+    }
+    .photo-container {
+      display: flex;
+      overflow-x: auto;
+      gap: 5px;
+      padding: 5px 0;
+      margin: 10px 0;
+      background: #f0f8ff;
+      border-radius: 4px;
+    }
+    .dived-btn {
+      background: #00CED1;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      margin-top: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 100%; /* Make button take full width */
+      box-sizing: border-box;
+    }
+    .dived { background: #4CAF50 !important; }
+
+    h3 {
+      color: #003366;
+      margin-top: 0;
+      font-size: 1.1em;
+    }
+    .reviews {
+      font-size: 0.8em;
+      margin-top: 8px;
+      border-top: 1px solid #eee;
+      padding-top: 5px;
+    }
+    .review-item {
+      margin-bottom: 4px;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed #eee;
+    }
+    .review-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .review-author {
+      font-weight: bold;
+      color: #003366;
+    }
+    .review-stars {
+      color: gold;
+    }
+    
+    /* AdSense Container Styling */
+    #adsense-container {
+      position: fixed;
+      bottom: 10px; /* Adjust as needed */
+      left: 10px;  /* Adjust as needed */
+      z-index: 1000;
+      background-color: white;
+      padding: 5px;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      max-width: 300px; /* Limit ad container width for better mobile display */
+    }
+  </style>
+</head>
+<body>
+  <header id="app-header">
+    <div class="menu-container">
+      <button class="menu-button" aria-label="Menu">
+        <div class="hamburger-icon"></div>
+        <div class="hamburger-icon"></div>
+        <div class="hamburger-icon"></div>
+      </button>
+      <ul class="dropdown-menu">
+        <li id="myAccountMenuItem"><a href="#" id="myAccountLink">My Account</a></li>
+        <li id="createAccountMenuItem"><a href="create-account.html">Create Account</a></li>
+        <li id="addDiveSiteMenuItem"><a href="#" id="addDiveSiteLink">Add a Dive Site</a></li>
+        <li><a href="my-top-5-dive-sites.html">My Top 5 Dive Sites</a></li>
+        <li><a href="where-ive-dived.html">Where I've Dived</a></li>
+        <li><a href="feed.html" id="feedLink">Activity Feed</a></li>
+      </ul>
+    </div>
+    <h1>The Dive Atlas</h1>
+    <div class="user-info">
+      <span id="loggedInUsername"></span>
+      <button id="createAccountButton">Create Account</button>
+      <button id="authButton"></button>
+    </div>
+  </header>
+  
+  <div id="map">
+    <img id="floating-logo" src="images/logo.png" alt="The Dive Atlas Logo">
+    <div id="map-controls">
+      <button id="toggle-view">Switch to Street View</button>
+    </div>
+    
+    <button id="add-location-button">Add a Dive Site</button>
+
+    <div id="location-selection-controls">
+      <button id="confirm-location-btn">Confirm Location</button>
+      <button id="cancel-location-btn">Cancel</button>
+    </div>
+
+    <div id="center-pin"></div>
+  </div>
+
+  <div id="fixed-popup-container">
+    <span id="fixed-popup-close">&times;</span>
+    <div id="fixed-popup-content">
+    </div>
+  </div>
+  
+  <div id="adsense-container">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5518829091863921"
+           data-ad-slot="YOUR_AD_SLOT_ID"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+           (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+  </div>
+
+  <script>
+    // --- Authentication Check ---
+    let isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    let loggedInUser = localStorage.getItem('loggedInUser');
+    // Get the account type. Your login script should set this.
+    let loggedInUserType = localStorage.getItem('loggedInUserType');
+
+    const authButton = document.getElementById('authButton');
+    const loggedInUsernameSpan = document.getElementById('loggedInUsername');
+    const addLocationButton = document.getElementById('add-location-button');
+    const addDiveSiteLink = document.getElementById('addDiveSiteLink');
+    const myAccountLink = document.getElementById('myAccountLink');
+    const feedLink = document.getElementById('feedLink');
+    
+    const createAccountButton = document.getElementById('createAccountButton');
+    const createAccountMenuItem = document.getElementById('createAccountMenuItem');
+    const myAccountMenuItem = document.getElementById('myAccountMenuItem');
+    const addDiveSiteMenuItem = document.getElementById('addDiveSiteMenuItem');
+
+
+    function updateAuthUI() {
+        if (isLoggedIn) {
+            loggedInUsernameSpan.textContent = `Hello, ${loggedInUser || 'User'}!`;
+            authButton.textContent = 'Logout';
+            authButton.onclick = function() {
+                localStorage.setItem('isLoggedIn', 'false');
+                localStorage.removeItem('loggedInUser');
+                localStorage.removeItem('loggedInEmail');
+                localStorage.removeItem('loggedInUserType'); // Clear account type on logout
+                isLoggedIn = false;
+                loggedInUser = null;
+                updateAuthUI();
+                window.location.reload();
+            };
+            
+            createAccountButton.style.display = 'none';
+            createAccountMenuItem.style.display = 'none';
+            myAccountMenuItem.style.display = 'list-item';
+            addDiveSiteMenuItem.style.display = 'list-item';
+            myAccountLink.href = 'my-account.html';
+            addLocationButton.style.display = 'block';
+
+        } else {
+            loggedInUsernameSpan.textContent = '';
+            authButton.textContent = 'Login';
+            authButton.onclick = function() {
+                window.location.href = 'login.html';
+            };
+
+            createAccountButton.style.display = 'inline-block';
+            createAccountButton.onclick = function() {
+                window.location.href = 'create-account.html';
+            };
+            createAccountMenuItem.style.display = 'list-item';
+            myAccountMenuItem.style.display = 'none';
+            addDiveSiteMenuItem.style.display = 'none';
+            myAccountLink.href = 'login.html'; 
+            addLocationButton.style.display = 'block';
+        }
+        if (feedLink) feedLink.href = 'feed.html';
+    }
+
+    function handleAddClick(e) {
+        if (!isLoggedIn) {
+            e.preventDefault();
+            alert('You must be logged in to add new locations.');
+            window.location.href = 'login.html';
+            return false;
+        }
+        return true;
+    }
+
+    addDiveSiteLink.addEventListener('click', function(e) {
+        if (handleAddClick(e)) {
+            document.getElementById('map-controls').style.display = 'none';
+            addLocationButton.style.display = 'none';
+            fixedPopupContainer.style.display = 'none';
+            currentSelectionType = 'diveSite';
+            enterLocationSelectionMode();
+        }
+    });
+
+    updateAuthUI();
+
+
+    function setMapAndPopupHeight() {
+      const headerHeight = document.querySelector('header').offsetHeight;
+      const windowHeight = window.innerHeight;
+
+      const mapElement = document.getElementById('map');
+      const fixedPopupContainer = document.getElementById('fixed-popup-container');
+
+      mapElement.style.height = `${windowHeight - headerHeight}px`;
+
+      const popupTop = headerHeight + 10;
+      const popupMaxHeight = windowHeight - popupTop - 10;
+      fixedPopupContainer.style.top = `${popupTop}px`;
+      fixedPopupContainer.style.maxHeight = `${popupMaxHeight}px`;
+
+      if (map) {
+          map.invalidateSize();
+      }
+    }
+
+    window.addEventListener('load', setMapAndPopupHeight);
+    window.addEventListener('resize', setMapAndPopupHeight);
+    window.dispatchEvent(new Event('load'));
+
+    const southWest = L.latLng(-85, -179.9);
+    const northEast = L.latLng(85, 179.9);
+    const bounds = L.latLngBounds(southWest, northEast);
+
+    const map = L.map('map', {
+      center: [10, 0],
+      zoom: 3,
+      minZoom: 3,
+      maxBounds: bounds,
+      maxBoundsViscosity: 1.0,
+      worldCopyJump: false,
+      zoomControl: false,
+      attributionControl: true
+    });
+
+    const zoomControl = L.control.zoom({ position: 'topright' }).addTo(map);
+    document.getElementById('map-controls').appendChild(zoomControl.getContainer());
+
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles © Esri',
+      noWrap: true
+    }).addTo(map);
+
+    const street = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> powered by <a href="https://osmalert.org/" target="_blank">OSM Alert</a>'
+    });
+
+    const defaultIcon = new L.Icon({
+        iconUrl: 'images/marker-icon-2x-blue.png',
+        shadowUrl: 'images/marker-shadow.png',
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+    const selectedIcon = new L.Icon({
+        iconUrl: 'images/marker-icon-2x-red.png',
+        shadowUrl: 'images/marker-shadow.png',
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+    const scubaShopIcon = new L.Icon({
+        iconUrl: 'images/marker-icon-2x-green.png',
+        shadowUrl: 'images/marker-shadow.png',
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+
+    let currentOpenMarker = null;
+
+    function getStarRating(score) {
+      const fullStars = '&#9733;'.repeat(Math.floor(score));
+      const halfStar = (score % 1 >= 0.5) ? '&#189;' : '';
+      const emptyStars = '&#9734;'.repeat(5 - Math.ceil(score));
+      return fullStars + halfStar + emptyStars;
+    }
+
+    const fixedPopupContainer = document.getElementById('fixed-popup-container');
+    const fixedPopupContent = document.getElementById('fixed-popup-content');
+    const fixedPopupCloseBtn = document.getElementById('fixed-popup-close');
+
+    fixedPopupCloseBtn.addEventListener('click', function() {
+        fixedPopupContainer.style.display = 'none';
+        if (currentOpenMarker) {
+            if (currentOpenMarker.options.type === 'diveSite' && currentOpenMarker.options.icon === selectedIcon) {
+                currentOpenMarker.setIcon(defaultIcon);
+            }
+            currentOpenMarker = null;
+        }
+    });
+
+    // --- Local Storage Keys and Data ---
+    const LOCAL_STORAGE_KEY_DIVES = 'diveAtlasDivedSites';
+    const LOCAL_STORAGE_KEY_OPERATED_SITES = 'diveAtlasOperatedSites';
+    const LOCAL_STORAGE_KEY_USER_DIVES = 'userAddedDiveSites';
+    const LOCAL_STORAGE_KEY_USER_SHOPS = 'userAddedScubaShops';
+
+    let divedSites = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_DIVES)) || [];
+    let operatedSites = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_OPERATED_SITES)) || [];
+
+    function saveDivedSites() {
+        localStorage.setItem(LOCAL_STORAGE_KEY_DIVES, JSON.stringify(divedSites));
+    }
+    function saveOperatedSites() {
+        localStorage.setItem(LOCAL_STORAGE_KEY_OPERATED_SITES, JSON.stringify(operatedSites));
+    }
+
+    let allDiveSites = [...diveSites]; // This is from dive-data.js, not the user's list
+    const userAddedDiveSites = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_USER_DIVES)) || [];
+    allDiveSites = allDiveSites.concat(userAddedDiveSites);
+
+    const allMarkers = [];
+
+    // --- Marker Click Handlers ---
+    function attachDiveSiteClickHandler(marker) {
+        marker.on('click', function() {
+            if (currentOpenMarker && currentOpenMarker.options.type === 'diveSite') {
+                currentOpenMarker.setIcon(defaultIcon);
+            }
+            currentOpenMarker = this;
+            currentOpenMarker.setIcon(selectedIcon);
+
+            fixedPopupContent.innerHTML = this.customPopupContent;
+            fixedPopupContainer.style.display = 'block';
+
+            const btn = fixedPopupContent.querySelector('.dived-btn');
+            if (btn) {
+                const siteId = parseInt(btn.dataset.site);
+                if (!isLoggedIn) {
+                    btn.style.display = 'none';
+                } else {
+                    btn.style.display = 'block';
+                    loggedInUserType = localStorage.getItem('loggedInUserType');
+
+                    // DIVE CENTRE ACCOUNT LOGIC
+                    if (loggedInUserType === 'Dive Centre Account') {
+                        if (operatedSites.includes(siteId)) {
+                            btn.classList.add('dived'); // Use same style for "checked" state
+                            btn.textContent = '✔ We Operate Here!';
+                        } else {
+                            btn.classList.remove('dived');
+                            btn.textContent = 'We Operate Here';
+                        }
+                        btn.onclick = function() {
+                            if (!this.classList.contains('dived')) {
+                                this.classList.add('dived');
+                                this.textContent = '✔ We Operate Here!';
+                                operatedSites.push(siteId);
+                                saveOperatedSites();
+                            } else {
+                                this.classList.remove('dived');
+                                this.textContent = 'We Operate Here';
+                                const index = operatedSites.indexOf(siteId);
+                                if (index > -1) {
+                                    operatedSites.splice(index, 1);
+                                }
+                                saveOperatedSites();
+                            }
+                        };
+                    } 
+                    // DIVER ACCOUNT LOGIC (DEFAULT)
+                    else {
+                        if (divedSites.includes(siteId)) {
+                            btn.classList.add('dived');
+                            btn.textContent = '✔ Dived Here!';
+                        } else {
+                            btn.classList.remove('dived');
+                            btn.textContent = "I've Dived Here";
+                        }
+                        btn.onclick = function() {
+                            if (!this.classList.contains('dived')) {
+                                this.classList.add('dived');
+                                this.textContent = '✔ Dived Here!';
+                                divedSites.push(siteId);
+                                saveDivedSites();
+                            } else {
+                                this.classList.remove('dived');
+                                this.textContent = "I've Dived Here";
+                                const index = divedSites.indexOf(siteId);
+                                if (index > -1) {
+                                    divedSites.splice(index, 1);
+                                }
+                                saveDivedSites();
+                            }
+                        };
+                    }
+                }
+            }
+        });
+    }
+
+    function attachScubaShopClickHandler(marker) {
+        marker.on('click', function() {
+            if (currentOpenMarker && currentOpenMarker.options.type === 'diveSite') {
+                currentOpenMarker.setIcon(defaultIcon);
+            }
+            currentOpenMarker = this;
+            fixedPopupContent.innerHTML = this.customPopupContent;
+            fixedPopupContainer.style.display = 'block';
+        });
+    }
+
+    // --- Create Markers and Attach Handlers ---
+    allDiveSites.forEach(site => {
+      const totalStars = site.reviews.reduce((sum, review) => sum + review.stars, 0);
+      const averageRating = totalStars / site.reviews.length;
+      const ratingStars = getStarRating(averageRating);
+      const marker = L.marker(site.position, { icon: defaultIcon, type: 'diveSite', data: { id: site.id, ...site } }).addTo(map);
+      allMarkers.push(marker);
+
+      marker.customPopupContent = `
+        <h3>${site.name}</h3>
+        <p><strong>Depth:</strong> ${site.depth} | <strong>Rating:</strong> <span class="review-stars">${ratingStars}</span> (${averageRating.toFixed(1)}/5)</p>
+        <div class="photo-container">
+          ${site.photos.map(photo => `<img src="${photo}" class="dive-photo" alt="${site.name}">`).join('')}
+        </div>
+        <div class="reviews">
+          <h4>User Reviews:</h4>
+          ${site.reviews.map(review => `
+            <div class="review-item">
+              <p><span class="review-author">${review.author}:</span> <span class="review-stars">${getStarRating(review.stars)}</span></p>
+              <p>"${review.comment}"</p>
+            </div>`).join('')}
+        </div>
+        <button class="dived-btn" data-site="${site.id}"></button>
+      `;
+      attachDiveSiteClickHandler(marker);
+    });
+
+    const allScubaShops = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY_USER_SHOPS)) || [];
+    allScubaShops.forEach(shop => {
+        const totalShopStars = shop.reviews ? shop.reviews.reduce((sum, review) => sum + review.stars, 0) : 0;
+        const averageShopRating = shop.reviews && shop.reviews.length > 0 ? totalShopStars / shop.reviews.length : 0;
+        const shopRatingStars = getStarRating(averageShopRating);
+        const marker = L.marker(shop.position, { icon: scubaShopIcon, type: 'scubaShop', data: { id: shop.id, ...shop } }).addTo(map);
+        allMarkers.push(marker);
+
+        marker.customPopupContent = `
+            <h3>${shop.name}</h3>
+            ${shop.contact.phone ? `<p><strong>Phone:</strong> ${shop.contact.phone}</p>` : ''}
+            ${shop.contact.website ? `<p><strong>Website:</strong> <a href="${shop.contact.website}" target="_blank">${shop.contact.website}</a></p>` : ''}
+            ${shop.services ? `<p><strong>Services:</strong> ${shop.services}</p>` : ''}
+            ${shop.reviews && shop.reviews.length > 0 ? `<p><strong>Rating:</strong> <span class="review-stars">${shopRatingStars}</span> (${averageShopRating.toFixed(1)}/5)</p>` : ''}
+            <div class="photo-container">
+              ${shop.photos && shop.photos.length > 0 ? shop.photos.map(photo => `<img src="${photo}" class="shop-photo" alt="${shop.name}">`).join('') : 'No photos available.'}
+            </div>
+            ${shop.reviews && shop.reviews.length > 0 ? `<div class="reviews"><h4>User Reviews:</h4>${shop.reviews.map(review => `<div class="review-item"><p><span class="review-author">${review.author}:</span> <span class="review-stars">${getStarRating(review.stars)}</span></p><p>"${review.comment}"</p></div>`).join('')}</div>` : ''}
+        `;
+        attachScubaShopClickHandler(marker);
+    });
+
+    const locationSelectionControls = document.getElementById('location-selection-controls');
+    const confirmLocationBtn = document.getElementById('confirm-location-btn');
+    const cancelLocationBtn = document.getElementById('cancel-location-btn');
+    const centerPin = document.getElementById('center-pin');
+    let currentSelectionType = null;
+
+    addLocationButton.addEventListener('click', function(e) {
+        if (handleAddClick(e)) {
+            document.getElementById('map-controls').style.display = 'none';
+            addLocationButton.style.display = 'none';
+            fixedPopupContainer.style.display = 'none';
+            currentSelectionType = 'diveSite';
+            enterLocationSelectionMode();
+        }
+    });
+
+    function enterLocationSelectionMode() {
+        locationSelectionControls.style.display = 'flex';
+        centerPin.style.display = 'block';
+        centerPin.style.backgroundImage = `url('images/marker-icon-2x-blue.png')`;
+        map.eachLayer(function(layer) {
+            if (layer instanceof L.Marker) { layer.off('click'); }
+        });
+        map.off('click', handleMapClick);
+        alert(`Move the map to position the blue pin at your desired location, then press 'Confirm Location'.`);
+    }
+
+    confirmLocationBtn.addEventListener('click', function() {
+        const latlng = map.getCenter();
+        const redirectURL = `add-dive-site.html?lat=${latlng.lat}&lng=${latlng.lng}`;
+        window.location.href = redirectURL;
+    });
+
+    cancelLocationBtn.addEventListener('click', function() {
+        exitLocationSelectionMode();
+    });
+
+    function exitLocationSelectionMode() {
+        locationSelectionControls.style.display = 'none';
+        centerPin.style.display = 'none';
+        document.getElementById('map-controls').style.display = 'flex';
+        addLocationButton.style.display = 'block';
+
+        allMarkers.forEach(marker => {
+            marker.off('click');
+            if (marker.options.type === 'diveSite') {
+                attachDiveSiteClickHandler(marker);
+            } else if (marker.options.type === 'scubaShop') {
+                attachScubaShopClickHandler(marker);
+            }
+        });
+        map.on('click', handleMapClick);
+        currentSelectionType = null;
+    }
+
+    function handleMapClick(e) {
+        fixedPopupContainer.style.display = 'none';
+        if (currentOpenMarker) {
+            if (currentOpenMarker.options.type === 'diveSite' && currentOpenMarker.options.icon === selectedIcon) {
+                currentOpenMarker.setIcon(defaultIcon);
+            }
+            currentOpenMarker = null;
+        }
+    }
+    map.on('click', handleMapClick);
+
+    fixedPopupContainer.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+
+    document.getElementById('toggle-view').addEventListener('click', function() {
+        if (map.hasLayer(satellite)) {
+            map.removeLayer(satellite);
+            street.addTo(map);
+            this.textContent = 'Switch to Satellite View';
+        } else {
+            map.removeLayer(street);
+            satellite.addTo(map);
+            this.textContent = 'Switch to Street View';
+        }
+    });
+    
+    function getUrlParams() {
+        const params = {};
+        window.location.search.substring(1).split('&').forEach(param => {
+            const parts = param.split('=');
+            if (parts.length === 2) {
+                params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
+            }
+        });
+        return params;
+    }
+
+    const urlParams = getUrlParams();
+    if (urlParams.lat && urlParams.lng && urlParams.type) {
+        const targetLat = parseFloat(urlParams.lat);
+        const targetLng = parseFloat(urlParams.lng);
+        const targetType = urlParams.type;
+        const targetId = parseInt(urlParams.id);
+
+        if (!isNaN(targetLat) && !isNaN(targetLng) && !isNaN(targetId)) {
+            const targetLatLng = L.latLng(targetLat, targetLng);
+            map.setView(targetLatLng, 10);
+            setTimeout(() => {
+                let foundMarker = null;
+                allMarkers.forEach(marker => {
+                  const markerData = marker.options.data;
+                  if (markerData && markerData.id === targetId && marker.options.type === targetType) {
+                    foundMarker = marker;
+                  }
+                });
+                if (foundMarker) {
+                    foundMarker.fire('click');
+                } else {
+                    console.error(`ERROR: No marker found for ID: ${targetId}, Type: ${targetType}`);
+                }
+            }, 500);
+        } else {
+            console.error('Invalid URL parameters for marker lookup (lat, lng, or id is NaN).', urlParams);
+        }
+    }
+  </script>
+</body>
+</html>
